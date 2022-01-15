@@ -197,7 +197,7 @@ def change_name_of_user(driver: WebDriver) -> None:
     )
     edit_name.click()
     driver.find_element_by_css_selector("input.username-form__input").send_keys(
-        "Talked" + Keys.ENTER
+        "Colmena Recorder" + Keys.ENTER
     )
 
 
