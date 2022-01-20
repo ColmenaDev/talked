@@ -108,7 +108,12 @@ ffmpeg_audio_input = [
 ]
 
 
-def assemble_command(audio_only: bool):
+def assemble_command(
+        audio_only: bool,
+        enable_streaming: bool,
+        icecast_url: str,
+        token: str
+):
     if audio_only:
         try:
             audio_codec = audio_codecs[config["audio_codec"]]
@@ -129,6 +134,9 @@ def assemble_command(audio_only: bool):
 
     command = ffmpeg_base + ffmpeg_audio_input
 
+# ffmpeg -re -i Black_Sabbath_-_\(Live_20-12-70\)_Black_Sabbath_.mp3.mp3 -c:a libopus -b:a 48k -content_type "audio/webm"  output.webm -content_type "audio/webm" icecast://source:d2livreah68688@sdrtelecom.com.br:8000/teste.webm
+# ffmpeg -re -i Black_Sabbath_-_\(Live_20-12-70\)_Black_Sabbath_.mp3.mp3 -c:a libopus -b:a 48k -f tee -content_type "audio/webm" -map 0:a  "output.webm|[onfail=ignore:content_type=audio/webm]icecast://source:d2livreah68688@sdrtelecom.com.br:8000/teste.webm"
+
     if not audio_only:
         command += ffmpeg_video_input
         command += [os.environ["DISPLAY"]]
@@ -138,10 +146,18 @@ def assemble_command(audio_only: bool):
 
     filename = f"{time.strftime('%Y%m%dT%H%M%S')}_output.{file_extension}"
 
-    command += [
-        "-threads",
-        str(config["encoding_threads"]),
-        f"{config['recording_dir']}/{filename}",
-    ]
+    if not enable_streaming:
+        command += [
+            "-threads",
+            str(config["encoding_threads"]),
+            f"{config['recording_dir']}/{filename}",
+        ]
+    else:
+        command += [
+            "-threads",
+            str(config["encoding_threads"]),
+            "-f", "tee", "-content_type", "audio/webm", "-map", "0:a",  f"{config['recording_dir']}/{filename}"+"|[onfail=ignore:content_type=audio/webm]"+f"{icecast_url}",
+        ]
+
 
     return command, filename

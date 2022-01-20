@@ -31,6 +31,8 @@ def start(
     nextcloud_version: str,
     audio_only: bool,
     grid_view: bool,
+    enable_streaming: bool,
+    icecast_url: str
 ) -> None:
     msg_queue = queue
 
@@ -53,7 +55,7 @@ def start(
         logging.info("Starting ffmpeg process")
 
         try:
-            ffmpeg_command, filename = assemble_command(audio_only)
+            ffmpeg_command, filename = assemble_command(audio_only, enable_streaming, icecast_url, token)
         except RuntimeError:
             msg_queue.put(
                 {

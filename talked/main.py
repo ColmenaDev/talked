@@ -31,10 +31,14 @@ def start():
     audio_only = request.get_json().get("audio_only", config["audio_only"])
     grid_view = request.get_json().get("grid_view", config["grid_view"])
 
+    enable_streaming = request.get_json().get("enable_streaming", False)
+
+    icecast_url = request.get_json().get("icecast_url", "")
+
     recording.clear()
     recording_thread = Thread(
         target=recorder.start,
-        args=(token, queue, recording, nextcloud_version, audio_only, grid_view),
+        args=(token, queue, recording, nextcloud_version, audio_only, grid_view, enable_streaming, icecast_url),
     )
     recording_thread.start()
     output = queue.get()
