@@ -51,7 +51,7 @@ audio_codecs = {
             "-b:a",
             config.get("audio_opus_bitrate", config["audio_bitrate"]),
         ],
-        "file_extension": "opus",
+        "file_extension": "webm",
     },
     "flac": {
         "args": [
@@ -146,18 +146,35 @@ def assemble_command(
 
     filename = f"{time.strftime('%Y%m%dT%H%M%S')}_output.{file_extension}"
 
-    if not enable_streaming:
+    command += [
+        "-threads",
+        str(config["encoding_threads"]),
+        f"{config['recording_dir']}/{filename}",
+    ]
+
+    if enable_streaming:
+        command += audio_codec["args"]
         command += [
             "-threads",
             str(config["encoding_threads"]),
-            f"{config['recording_dir']}/{filename}",
+           "-content_type", "audio/webm",
+            f"{streaming_url}",
         ]
-    else:
-        command += [
-            "-threads",
-            str(config["encoding_threads"]),
-            "-f", "tee", "-content_type", "audio/webm", "-map", "0:a",  f"{config['recording_dir']}/{filename}"+"|[onfail=ignore:content_type=audio/webm]"+f"{streaming_url}",
-        ]
+
+#    else:
+#        command += [
+#            "-threads",
+#            str(config["encoding_threads"]),
+#            "-content_type", "audio/webm",
+#            "-f", "tee", "-content_type", "audio/webm", "-map", "0:a",  f"{config['recording_dir']}/{filename}"+"|[onfail=ignore:content_type=audio/webm]"+f"{streaming_url}",
+#            "-f", "tee", "-content_type", "audio/webm", "-map", "0:a",  '"out.webm|[onfail=ignore:content_type=audio/webm]icecast://source:d2livreah68688@sdrtelecom.com.br:8000/teste.webm"',
+#            f"{config['recording_dir']}/{filename}",
+#            str(audio_codec["args"]),
+#            "-threads",
+#            str(config["encoding_threads"]),
+#            "-content_type", "audio/webm",
+#            f"{streaming_url}",
+#        ]
 
 
     return command, filename
