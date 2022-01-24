@@ -33,12 +33,12 @@ def start():
 
     enable_streaming = request.get_json().get("enable_streaming", False)
 
-    icecast_url = request.get_json().get("icecast_url", "")
+    streaming_url = request.get_json().get("streaming_url", "")
 
     recording.clear()
     recording_thread = Thread(
         target=recorder.start,
-        args=(token, queue, recording, nextcloud_version, audio_only, grid_view, enable_streaming, icecast_url),
+        args=(token, queue, recording, nextcloud_version, audio_only, grid_view, enable_streaming, streaming_url),
     )
     recording_thread.start()
     output = queue.get()

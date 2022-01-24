@@ -111,7 +111,7 @@ ffmpeg_audio_input = [
 def assemble_command(
         audio_only: bool,
         enable_streaming: bool,
-        icecast_url: str,
+        streaming_url: str,
         token: str
 ):
     if audio_only:
@@ -156,7 +156,7 @@ def assemble_command(
         command += [
             "-threads",
             str(config["encoding_threads"]),
-            "-f", "tee", "-content_type", "audio/webm", "-map", "0:a",  f"{config['recording_dir']}/{filename}"+"|[onfail=ignore:content_type=audio/webm]"+f"{icecast_url}",
+            "-f", "tee", "-content_type", "audio/webm", "-map", "0:a",  f"{config['recording_dir']}/{filename}"+"|[onfail=ignore:content_type=audio/webm]"+f"{streaming_url}",
         ]
 
 

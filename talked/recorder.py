@@ -32,7 +32,7 @@ def start(
     audio_only: bool,
     grid_view: bool,
     enable_streaming: bool,
-    icecast_url: str
+    streaming_url: str
 ) -> None:
     msg_queue = queue
 
@@ -55,7 +55,7 @@ def start(
         logging.info("Starting ffmpeg process")
 
         try:
-            ffmpeg_command, filename = assemble_command(audio_only, enable_streaming, icecast_url, token)
+            ffmpeg_command, filename = assemble_command(audio_only, enable_streaming, streaming_url, token)
         except RuntimeError:
             msg_queue.put(
                 {
@@ -68,6 +68,7 @@ def start(
             )
             graceful_shutdown(browser)
 
+        logging.info("ffmpeg_command: "+f"{ffmpeg_command}")
         ffmpeg = subprocess.Popen(ffmpeg_command)  # nosec
         logging.info("Recording has started")
 
