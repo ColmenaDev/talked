@@ -7,11 +7,9 @@ from queue import Queue
 from threading import Event
 
 from pyvirtualdisplay import Display
-from selenium.common.exceptions import (
-    ElementClickInterceptedException,
-    NoSuchElementException,
-    TimeoutException,
-)
+from selenium.common.exceptions import (ElementClickInterceptedException,
+                                        NoSuchElementException,
+                                        TimeoutException)
 from selenium.webdriver import Firefox
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -137,18 +135,18 @@ def launch_browser(
     join_call(driver, msg_queue, nextcloud_version)
 
     # Get page body to send keyboard shortcuts
-    page = driver.find_element_by_tag_name("body")
+    page = driver.find_element(By.TAG_NAME, "body")
 
     # Press escape to remove focus from chat.
     page.send_keys(Keys.ESCAPE)
     # Mute the talked user
-    mute_user(driver)
+    mute_user(driver, nextcloud_version)
 
     # If grid view is set to False, switch to speaker view.
     if not grid_view:
         switch_to_speaker_view(driver, nextcloud_version)
 
-    close_sidebar(driver)
+    close_sidebar(driver, nextcloud_version)
 
     # Go fullscreen
     page.send_keys("f")
@@ -208,7 +206,7 @@ def change_name_of_user(driver: WebDriver, nextcloud_version: int) -> None:
         )
 
     edit_name.click()
-    driver.find_element_by_css_selector("input.username-form__input").send_keys(
+    driver.find_element(By.CSS_SELECTOR, "input.username-form__input").send_keys(
         "Colmena Recorder" + Keys.ENTER
     )
 
@@ -289,10 +287,16 @@ def join_call(driver: WebDriver, msg_queue: Queue, nextcloud_version: int) -> No
         graceful_shutdown(driver)
 
 
-def mute_user(driver: WebDriver) -> None:
+def mute_user(driver: WebDriver, nextcloud_version: int) -> None:
     logging.info("Muting Talked user")
+
+    if nextcloud_version >= 25:
+        mute_button_css_selector = "#muteWrapper .button-vue:not(.no-audio-available)"
+    else:
+        mute_button_css_selector = "#mute:not(.audio-disabled)"
+
     try:
-        driver.find_element_by_css_selector("#mute:not(.audio-disabled)").click()
+        driver.find_element(By.CSS_SELECTOR, mute_button_css_selector).click()
     except NoSuchElementException:
         logging.info(("Mute button wasn't found. Assuming we are already muted."))
 
@@ -302,16 +306,21 @@ def switch_to_speaker_view(driver: WebDriver, nextcloud_version: int) -> None:
     logging.info("Switching to speaker view")
 
     if nextcloud_version >= 23:
-        driver.find_element_by_css_selector(
-            ".local-media-controls button.action-item__menutoggle"
+        driver.find_element(
+            By.CSS_SELECTOR, ".local-media-controls button.action-item__menutoggle"
         ).click()
+
+        if nextcloud_version >= 25:
+            speaker_view_button_css_selector = "button.action-button .promoted-view-icon"
+        else:
+            speaker_view_button_css_selector = "button.action-button .icon-promoted-view"
 
         try:
             WebDriverWait(driver, 2).until(
                 EC.presence_of_element_located(
                     (
                         By.CSS_SELECTOR,
-                        "button.action-button .icon-promoted-view",
+                        speaker_view_button_css_selector,
                     )
                 )
             ).click()
@@ -324,8 +333,8 @@ def switch_to_speaker_view(driver: WebDriver, nextcloud_version: int) -> None:
             )
     else:
         try:
-            driver.find_element_by_css_selector(
-                ".top-bar.in-call button.icon-promoted-view"
+            driver.find_element(
+                By.CSS_SELECTOR, ".top-bar.in-call button.icon-promoted-view"
             ).click()
         except NoSuchElementException:
             logging.info(
@@ -336,22 +345,30 @@ def switch_to_speaker_view(driver: WebDriver, nextcloud_version: int) -> None:
             )
 
 
-def close_sidebar(driver: WebDriver) -> None:
+def close_sidebar(driver: WebDriver, nextcloud_version: int) -> None:
     # Close the sidebar
     logging.info("Closing sidebar")
+
+    if nextcloud_version >= 25:
+        close_sidebar_button_css_selector = "button.app-sidebar__close"
+        leave_call_button_css_selector = ".top-bar.in-call .top-bar__button .video-off-icon"
+    else:
+        close_sidebar_button_css_selector = "a.app-sidebar__close"
+        leave_call_button_css_selector = ".top-bar.in-call .top-bar__button .icon-leave-call"
+
     try:
-        driver.find_element_by_css_selector("a.app-sidebar__close").click()
+        driver.find_element(By.CSS_SELECTOR, close_sidebar_button_css_selector).click()
     except ElementClickInterceptedException:
         logging.info("Assuming toast is covering close button")
         close_toasts(driver)
-        driver.find_element_by_css_selector("a.app-sidebar__close").click()
+        driver.find_element(By.CSS_SELECTOR, close_sidebar_button_css_selector).click()
 
     # Wait for sidebar to close
     WebDriverWait(driver, 10).until(
         EC.visibility_of_element_located(
             (
                 By.CSS_SELECTOR,
-                ".top-bar.in-call .top-bar__button .icon-leave-call",
+                leave_call_button_css_selector,
             )
         )
     )
@@ -361,7 +378,7 @@ def close_toasts(driver: WebDriver) -> None:
     while True:
         logging.info("Closing toast")
         try:
-            driver.find_element_by_css_selector("span.toast-close").click()
+            driver.find_element(By.CSS_SELECTOR, "span.toast-close").click()
         except NoSuchElementException:
             logging.info("No more open toasts")
             break
